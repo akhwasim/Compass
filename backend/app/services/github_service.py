@@ -56,3 +56,23 @@ async def search_issues(
         response.raise_for_status()
         data = response.json()
         return data.get("items", [])
+
+
+async def get_repo_metadata(repo_full_name: str) -> dict:
+    """
+    Fetches repo metadata needed for confidence scoring.
+    repo_full_name format: "owner/repo"
+    """
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{GITHUB_API_BASE}/repos/{repo_full_name}",
+            headers=_get_headers(),
+        )
+        response.raise_for_status()
+        data = response.json()
+        return {
+            "language": data.get("language"),
+            "pushed_at": data.get("pushed_at"),
+            "open_issues_count": data.get("open_issues_count"),
+            "stargazers_count": data.get("stargazers_count"),
+        }
