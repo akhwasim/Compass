@@ -2,16 +2,12 @@ from datetime import datetime, timezone
 
 
 def _skill_overlap(user_languages: list[str], user_frameworks: list[str], repo_language: str, issue_text: str) -> str:
-    user_skills = {s.lower() for s in user_languages + user_frameworks}
+    user_skills = {s.lower() for s in user_languages}
     repo_lang = (repo_language or "").lower()
-    issue_text_lower = issue_text.lower()
 
-    lang_match = repo_lang in user_skills
-    framework_mentioned = any(fw.lower() in issue_text_lower for fw in user_frameworks)
-
-    if lang_match and framework_mentioned:
+    if repo_lang in user_skills:
         return "high"
-    elif lang_match or framework_mentioned:
+    elif not repo_lang:
         return "partial"
     else:
         return "low"

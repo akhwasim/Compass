@@ -5,6 +5,12 @@ from fastapi import FastAPI
 from app.services.github_service import get_authenticated_user, search_issues, get_repo_metadata
 from app.services.confidence_service import calculate_confidence
 
+from app.models.profile import ProfileRequest, ProfileResponse
+from app.services.groq_service import generate_contributor_profile
+
+from app.models.recommendation import RecommendationRequest, RecommendationResponse, RecommendedIssue
+from app.services.groq_service import rank_issues_with_reasoning
+
 app = FastAPI(title="Open Source Contribution Matcher")
 
 
@@ -12,6 +18,16 @@ app = FastAPI(title="Open Source Contribution Matcher")
 def health_check():
     return {"status": "ok"}
 
+@app.post("/profile", response_model=ProfileResponse)
+async def build_profile(request: ProfileRequest):
+    profile_text = await generate_contributor_profile(
+        experience=request.experience,
+        languages=request.languages,
+        frameworks=request.frameworks,
+        interests=request.interests,
+        available_time=request.available_time,
+    )
+    return ProfileResponse(contributor_profile=profile_text)
 
 @app.get("/debug/github-user")
 async def debug_github_user():
@@ -61,3 +77,55 @@ async def debug_confidence_test(language: str = "python"):
         })
 
     return {"count": len(results), "results": results}
+
+
+@app.post("/recommendations", response_model=RecommendationResponse)
+async def get_recommendations(request: RecommendationRequest):
+    all_candidates = []
+
+    for language in request.languages:
+        issues = await search_issues(language=language, max_results=10)
+
+        for issue in issues:
+            repo_full_name = issue["repository_url"].replace("https://api.github.com/repos/", "")
+            repo_meta = await get_repo_metadata(repo_full_name)
+
+            issue_data = {
+                "issue_title": issue["title"],
+                "issue_body": issue.get("body") or "",
+                "comments_count": issue.get("comments", 0),
+                "repo_language": repo_meta["language"],
+                "repo_pushed_at": repo_meta["pushed_at"],
+                "repo_open_issues": repo_meta["open_issues_count"],
+                "user_languages": request.languages,
+                "user_frameworks": request.frameworks,
+            }
+
+            confidence = calculate_confidence(issue_data)
+
+            all_candidates.append({
+                "title": issue["title"],
+                "repo": repo_full_name,
+                "url": issue["html_url"],
+                "body_snippet": issue.get("body") or "",
+                "confidence": confidence,
+            })
+
+    ranked = await rank_issues_with_reasoning(request.contributor_profile, all_candidates)
+
+    top_results = ranked[:10]
+
+    return RecommendationResponse(
+        count=len(top_results),
+        recommendations=[
+            RecommendedIssue(
+                title=r["title"],
+                repo=r["repo"],
+                url=r["url"],
+                confidence=r["confidence"]["final_confidence"],
+                why=r["why"],
+                why_not=r["why_not"],
+            )
+            for r in top_results
+        ],
+    )
