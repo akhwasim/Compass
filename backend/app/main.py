@@ -11,6 +11,10 @@ from app.services.groq_service import generate_contributor_profile
 from app.models.recommendation import RecommendationRequest, RecommendationResponse, RecommendedIssue
 from app.services.groq_service import rank_issues_with_reasoning
 
+from app.models.issue_explainer import IssueExplainerResponse
+from app.services.github_service import get_issue_details, get_readme, get_folder_structure
+from app.services.groq_service import explain_issue
+
 app = FastAPI(title="Open Source Contribution Matcher")
 
 
@@ -128,4 +132,28 @@ async def get_recommendations(request: RecommendationRequest):
             )
             for r in top_results
         ],
+    )
+
+
+@app.get("/issue/{owner}/{repo}/{issue_number}", response_model=IssueExplainerResponse)
+async def get_issue_explainer(owner: str, repo: str, issue_number: int):
+    issue = await get_issue_details(owner, repo, issue_number)
+    readme = await get_readme(owner, repo)
+    folder_structure = await get_folder_structure(owner, repo)
+
+    explanation = await explain_issue(
+        issue_title=issue["title"],
+        issue_body=issue["body"],
+        readme_text=readme,
+        folder_structure=folder_structure,
+    )
+
+    return IssueExplainerResponse(
+        title=issue["title"],
+        summary=explanation.get("summary", ""),
+        likely_files=explanation.get("likely_files", []),
+        concepts=explanation.get("concepts", []),
+        difficulty=explanation.get("difficulty", "Unknown"),
+        suggested_first_step=explanation.get("suggested_first_step", ""),
+        read_first=explanation.get("read_first", []),
     )

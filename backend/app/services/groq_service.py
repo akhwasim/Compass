@@ -119,3 +119,63 @@ Match the index number to the issue number above."""
     candidate_issues.sort(key=lambda x: confidence_order.get(x["confidence"]["final_confidence"], 3))
 
     return candidate_issues
+
+
+async def explain_issue(
+    issue_title: str,
+    issue_body: str,
+    readme_text: str,
+    folder_structure: list[str],
+) -> dict:
+    folder_list = ", ".join(folder_structure[:60]) if folder_structure else "unknown"
+    readme_excerpt = (readme_text or "")[:1500]
+    issue_excerpt = (issue_body or "")[:1500]
+
+    prompt = f"""You are helping a beginner understand a GitHub issue before they attempt it.
+
+Issue title: {issue_title}
+Issue body:
+{issue_excerpt}
+
+Repository README excerpt:
+{readme_excerpt}
+
+Top-level folder/file structure: {folder_list}
+
+Based ONLY on the information above (do not invent file contents you cannot see), provide:
+- "summary": 2-3 plain-language sentences explaining what this issue is asking for.
+- "likely_files": ONLY reference exact paths that appear in the "Top-level folder/file structure" list below. Do not invent or guess filenames that aren't in that list. If no specific verified file clearly matches, instead describe the likely location in plain words (e.g. "a routes file inside the backend/routes folder") rather than naming an unverified file.
+- "concepts": a list of 2-5 concepts/skills someone would need to understand to work on this (e.g. "Regex", "Async/await", "CSS Flexbox").
+- "difficulty": one of "Easy", "Medium", "Hard".
+- "suggested_first_step": one concrete, honest suggestion for where to start looking (e.g. "Start by reading X to understand how Y currently works") — NOT a solution, just a starting point.
+- "read_first": a list of docs to read first, typically ["README.md"] and/or ["CONTRIBUTING.md"] if relevant.
+
+Return ONLY valid JSON, no preamble, no markdown fences, in this exact format:
+{{"summary": "...", "likely_files": ["..."], "concepts": ["..."], "difficulty": "...", "suggested_first_step": "...", "read_first": ["..."]}}"""
+
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.4,
+        "max_tokens": 700,
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(GROQ_API_BASE, headers=_get_headers(), json=payload)
+        response.raise_for_status()
+        data = response.json()
+        raw_text = data["choices"][0]["message"]["content"].strip()
+
+    raw_text = raw_text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+
+    try:
+        return json.loads(raw_text)
+    except json.JSONDecodeError:
+        return {
+            "summary": "Unable to generate a summary for this issue right now.",
+            "likely_files": [],
+            "concepts": [],
+            "difficulty": "Unknown",
+            "suggested_first_step": "",
+            "read_first": ["README.md"],
+        }

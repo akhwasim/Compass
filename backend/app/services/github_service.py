@@ -76,3 +76,68 @@ async def get_repo_metadata(repo_full_name: str) -> dict:
             "open_issues_count": data.get("open_issues_count"),
             "stargazers_count": data.get("stargazers_count"),
         }
+
+
+async def get_issue_details(owner: str, repo: str, issue_number: int) -> dict:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{GITHUB_API_BASE}/repos/{owner}/{repo}/issues/{issue_number}",
+            headers=_get_headers(),
+        )
+        response.raise_for_status()
+        data = response.json()
+        return {
+            "title": data.get("title", ""),
+            "body": data.get("body") or "",
+        }
+
+
+async def get_readme(owner: str, repo: str) -> str:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{GITHUB_API_BASE}/repos/{owner}/{repo}/readme",
+            headers={**_get_headers(), "Accept": "application/vnd.github.raw+json"},
+        )
+        if response.status_code != 200:
+            return ""
+        return response.text
+
+
+async def get_folder_structure(owner: str, repo: str) -> list[str]:
+    """
+    Fetches top-level structure, plus one level deep into the first few subfolders.
+    Returns a flat list of verified paths (files and folders).
+    """
+    verified_paths = []
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{GITHUB_API_BASE}/repos/{owner}/{repo}/contents/",
+            headers=_get_headers(),
+        )
+        if response.status_code != 200:
+            return []
+
+        top_level = response.json()
+        if not isinstance(top_level, list):
+            return []
+
+        subfolders_to_expand = []
+        for item in top_level:
+            verified_paths.append(item["path"])
+            if item["type"] == "dir":
+                subfolders_to_expand.append(item["path"])
+
+        # Only expand a handful of subfolders to keep API calls bounded
+        for folder_path in subfolders_to_expand[:5]:
+            sub_response = await client.get(
+                f"{GITHUB_API_BASE}/repos/{owner}/{repo}/contents/{folder_path}",
+                headers=_get_headers(),
+            )
+            if sub_response.status_code == 200:
+                sub_items = sub_response.json()
+                if isinstance(sub_items, list):
+                    for sub_item in sub_items:
+                        verified_paths.append(sub_item["path"])
+
+    return verified_paths
