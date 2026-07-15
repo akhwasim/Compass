@@ -2,25 +2,42 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI
-from app.services.github_service import get_authenticated_user, search_issues, get_repo_metadata
-from app.services.confidence_service import calculate_confidence
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.services.github_service import (
+    get_authenticated_user,
+    search_issues,
+    get_repo_metadata,
+    get_issue_details,
+    get_readme,
+    get_folder_structure,
+)
+from app.services.confidence_service import calculate_baseline_confidence
+from app.services.groq_service import (
+    generate_contributor_profile,
+    rank_issues_with_reasoning,
+    explain_issue,
+)
 
 from app.models.profile import ProfileRequest, ProfileResponse
-from app.services.groq_service import generate_contributor_profile
-
 from app.models.recommendation import RecommendationRequest, RecommendationResponse, RecommendedIssue
-from app.services.groq_service import rank_issues_with_reasoning
-
 from app.models.issue_explainer import IssueExplainerResponse
-from app.services.github_service import get_issue_details, get_readme, get_folder_structure
-from app.services.groq_service import explain_issue
 
 app = FastAPI(title="Open Source Contribution Matcher")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
 
 @app.post("/profile", response_model=ProfileResponse)
 async def build_profile(request: ProfileRequest):
@@ -32,6 +49,7 @@ async def build_profile(request: ProfileRequest):
         available_time=request.available_time,
     )
     return ProfileResponse(contributor_profile=profile_text)
+
 
 @app.get("/debug/github-user")
 async def debug_github_user():
@@ -71,7 +89,7 @@ async def debug_confidence_test(language: str = "python"):
             "user_frameworks": [],
         }
 
-        confidence = calculate_confidence(issue_data)
+        confidence = calculate_baseline_confidence(issue_data)
 
         results.append({
             "title": issue["title"],
@@ -91,31 +109,31 @@ async def get_recommendations(request: RecommendationRequest):
         issues = await search_issues(language=language, max_results=10)
 
         for issue in issues:
-            repo_full_name = issue["repository_url"].replace("https://api.github.com/repos/", "")
-            repo_meta = await get_repo_metadata(repo_full_name)
+                repo_full_name = issue["repository_url"].replace("https://api.github.com/repos/", "")
+                repo_meta = await get_repo_metadata(repo_full_name)
 
-            issue_data = {
-                "issue_title": issue["title"],
-                "issue_body": issue.get("body") or "",
-                "comments_count": issue.get("comments", 0),
-                "repo_language": repo_meta["language"],
-                "repo_pushed_at": repo_meta["pushed_at"],
-                "repo_open_issues": repo_meta["open_issues_count"],
-                "user_languages": request.languages,
-                "user_frameworks": request.frameworks,
-            }
+                issue_data = {
+                    "issue_title": issue["title"],
+                    "issue_body": issue.get("body") or "",
+                    "comments_count": issue.get("comments", 0),
+                    "repo_language": repo_meta["language"],
+                    "repo_pushed_at": repo_meta["pushed_at"],
+                    "repo_open_issues": repo_meta["open_issues_count"],
+                    "user_languages": request.languages,
+                    "user_frameworks": request.frameworks,
+                }
 
-            confidence = calculate_confidence(issue_data)
+                confidence = calculate_baseline_confidence(issue_data)
 
-            all_candidates.append({
-                "title": issue["title"],
-                "repo": repo_full_name,
-                "url": issue["html_url"],
-                "body_snippet": issue.get("body") or "",
-                "confidence": confidence,
-            })
+                all_candidates.append({
+                    "title": issue["title"],
+                    "repo": repo_full_name,
+                    "url": issue["html_url"],
+                    "body_snippet": issue.get("body") or "",
+                    "confidence": confidence,
+                })
 
-    ranked = await rank_issues_with_reasoning(request.contributor_profile, all_candidates)
+    ranked = await rank_issues_with_reasoning(request.contributor_profile, all_candidates, request.interests)
 
     top_results = ranked[:10]
 

@@ -30,7 +30,9 @@ async def search_issues(
 ) -> list[dict]:
     """
     Search GitHub for open issues matching a language and label.
-    Uses the Search API, sorted by most recently updated (favors active repos).
+    Interest-based filtering is intentionally NOT done here — GitHub topic
+    filtering proved too sparse when combined with a language filter.
+    Interest is instead judged by the LLM at the ranking step.
     """
     query_parts = [
         f'label:"{label}"',
@@ -128,7 +130,6 @@ async def get_folder_structure(owner: str, repo: str) -> list[str]:
             if item["type"] == "dir":
                 subfolders_to_expand.append(item["path"])
 
-        # Only expand a handful of subfolders to keep API calls bounded
         for folder_path in subfolders_to_expand[:5]:
             sub_response = await client.get(
                 f"{GITHUB_API_BASE}/repos/{owner}/{repo}/contents/{folder_path}",

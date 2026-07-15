@@ -1,4 +1,5 @@
 import os
+import json
 import httpx
 
 GROQ_API_BASE = "https://api.groq.com/openai/v1/chat/completions"
@@ -45,54 +46,64 @@ Write only the profile description, no preamble."""
         data = response.json()
         return data["choices"][0]["message"]["content"].strip()
 
-import json
-
 
 async def rank_issues_with_reasoning(
     contributor_profile: str,
     candidate_issues: list[dict],
+    interests: list[str] = None,
 ) -> list[dict]:
     """
-    candidate_issues: list of dicts, each with title, repo, url, body_snippet, and confidence breakdown.
-    Returns the same issues annotated with 'why' and 'why_not', sorted best-first.
+    candidate_issues: list of dicts, each with title, repo, url, body_snippet, and baseline confidence breakdown.
+    The LLM reads the real issue text and may downgrade (never upgrade) the baseline
+    confidence if the issue is genuinely unclear. It also judges topical fit against
+    stated interests, but that only affects the "why" explanation, not the confidence tier.
+    Returns issues annotated with 'why', 'why_not', and final 'confidence', sorted best-first.
     """
     issues_summary = "\n\n".join(
         f"{i+1}. Title: {issue['title']}\n"
         f"   Repo: {issue['repo']}\n"
         f"   Issue excerpt: {issue.get('body_snippet', '')[:300]}\n"
-        f"   Confidence: {issue['confidence']['final_confidence']} "
+        f"   Baseline confidence: {issue['confidence']['baseline_confidence']} "
         f"(skill_overlap={issue['confidence']['skill_overlap']}, "
         f"complexity={issue['confidence']['complexity']}, "
-        f"repo_health={issue['confidence']['repo_health']}, "
-        f"clarity={issue['confidence']['clarity']})"
+        f"repo_health={issue['confidence']['repo_health']})"
         for i, issue in enumerate(candidate_issues)
+    )
+
+    interests_line = (
+        f"Interested in: {', '.join(interests)}" if interests else "No specific interest area stated"
     )
 
     prompt = f"""You are a direct, no-fluff mentor helping an open source contributor pick their next issue.
 
 Contributor profile:
 {contributor_profile}
+{interests_line}
 
-Candidate issues (each with a short excerpt and computed confidence signals):
+Candidate issues (each with a real excerpt and a baseline confidence computed from skill match, complexity, and repo activity):
 {issues_summary}
 
-For each issue, write:
-- "why_not": only if confidence is Low or Medium AND there's a genuine, specific gap. If the fit is actually strong with only a trivial or no real concern, leave this as an empty string rather than inventing one. If confidence is High, always set this to an empty string.
+For each issue:
+1. Read the actual excerpt and judge if it is genuinely clear (a beginner could understand what's being asked) or genuinely vague (missing context, unclear scope, ambiguous). Short issues can absolutely be clear — don't confuse brevity with vagueness. Only mark it vague if a reasonable person would actually be confused about what to do.
+2. Decide the final confidence: start from the baseline confidence given. If the issue is vague, downgrade it by exactly one tier (High->Medium, Medium->Low). If it's clear, keep the baseline as-is. NEVER upgrade above the baseline.
+3. Write "why": 1-2 sentences, SPECIFIC to what the issue actually asks for (reference the actual excerpt content). State plainly whether it fits, don't hedge unless truly uncertain.
+4. Write "why_not": only if final confidence is Low or Medium AND there's a genuine, specific gap (which may include "the issue description is vague" if you judged it that way). If the fit is strong with no real concern, leave this as an empty string. If final confidence is High, always set this to an empty string.
+5. If the contributor stated an interest area (e.g. frontend, backend, AI), judge from the issue excerpt whether this issue actually relates to that interest. This should influence your "why" explanation (mention the connection or lack of it) but should NOT change the confidence tier — confidence is about ability to solve it, not topic match.
 
 Vary your sentence structure across issues. Do not reuse the same phrasing template repeatedly.
 
 Return ONLY a JSON array, no preamble, no markdown fences, in this exact format:
 [
-  {{"index": 1, "why": "...", "why_not": "..."}},
+  {{"index": 1, "clarity": "clear", "confidence": "High", "why": "...", "why_not": "..."}},
   ...
 ]
-Match the index number to the issue number above."""
+Match the index number to the issue number above. "confidence" must be one of "High", "Medium", "Low"."""
 
     payload = {
         "model": GROQ_MODEL,
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.6,
-        "max_tokens": 1800,
+        "temperature": 0.5,
+        "max_tokens": 2000,
     }
 
     async with httpx.AsyncClient() as client:
@@ -112,11 +123,16 @@ Match the index number to the issue number above."""
 
     for i, issue in enumerate(candidate_issues):
         reasoning = reasoning_by_index.get(i + 1, {})
+        issue["confidence"]["final_confidence"] = reasoning.get(
+            "confidence", issue["confidence"]["baseline_confidence"]
+        )
         issue["why"] = reasoning.get("why", "")
         issue["why_not"] = reasoning.get("why_not", "")
 
     confidence_order = {"High": 0, "Medium": 1, "Low": 2}
-    candidate_issues.sort(key=lambda x: confidence_order.get(x["confidence"]["final_confidence"], 3))
+    candidate_issues.sort(
+        key=lambda x: confidence_order.get(x["confidence"]["final_confidence"], 3)
+    )
 
     return candidate_issues
 
@@ -144,7 +160,7 @@ Top-level folder/file structure: {folder_list}
 
 Based ONLY on the information above (do not invent file contents you cannot see), provide:
 - "summary": 2-3 plain-language sentences explaining what this issue is asking for.
-- "likely_files": ONLY reference exact paths that appear in the "Top-level folder/file structure" list below. Do not invent or guess filenames that aren't in that list. If no specific verified file clearly matches, instead describe the likely location in plain words (e.g. "a routes file inside the backend/routes folder") rather than naming an unverified file.
+- "likely_files": ONLY reference exact paths that appear in the "Top-level folder/file structure" list above. Do not invent or guess filenames that aren't in that list. If no specific verified file clearly matches, instead describe the likely location in plain words (e.g. "a routes file inside the backend/routes folder") rather than naming an unverified file.
 - "concepts": a list of 2-5 concepts/skills someone would need to understand to work on this (e.g. "Regex", "Async/await", "CSS Flexbox").
 - "difficulty": one of "Easy", "Medium", "Hard".
 - "suggested_first_step": one concrete, honest suggestion for where to start looking (e.g. "Start by reading X to understand how Y currently works") — NOT a solution, just a starting point.
