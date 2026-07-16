@@ -5,7 +5,7 @@ import type { ProfileFormData, RecommendedIssue, IssueExplainerResponse } from "
 import { ConfidenceIndicator } from "./components/ConfidenceIndicator";
 import "./App.css";
 
-type ViewState = "form" | "loading-profile" | "loading-recommendations" | "results" | "error";
+type ViewState = "form" | "loading-profile" | "loading-recommendations" | "results" | "no-results" | "error";
 
 function App() {
   const [view, setView] = useState<ViewState>("form");
@@ -35,7 +35,7 @@ function App() {
         interests: data.interests,
       });
       setRecommendations(recsResult.recommendations);
-      setView("results");
+      setView(recsResult.count === 0 ? "no-results" : "results");
     } catch (err) {
       console.error(err);
       setErrorMessage("Something went wrong while finding your matches. Please try again.");
@@ -118,10 +118,10 @@ function App() {
         </div>
       )}
 
-      {view === "error" && (
+      {view === "no-results" && (
         <div className="error-state">
-          <p>{errorMessage}</p>
-          <button onClick={handleStartOver}>Try again</button>
+          <p>No matching issues found for this combination. Try adding another language or loosening your interests.</p>
+          <button onClick={handleStartOver}>Adjust my profile</button>
         </div>
       )}
 
