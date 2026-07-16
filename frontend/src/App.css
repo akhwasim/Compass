@@ -2,42 +2,170 @@
   box-sizing: border-box;
 }
 
+:root {
+  --ink: #10161F;
+  --panel: #171F2C;
+  --panel-border: #263042;
+  --brass: #C9A227;
+  --brass-dim: #8a7020;
+  --verified-green: #4E9A6A;
+  --caution-amber: #D68A3C;
+  --low-rust: #B0524A;
+  --parchment: #E8E6DE;
+  --parchment-dim: #9aa0ab;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #0f1117;
-  color: #e6e6e6;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--ink);
+  background-image:
+    linear-gradient(rgba(201, 162, 39, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 162, 39, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: var(--parchment);
 }
 
 .app-container {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+  padding: 3rem 1.5rem 5rem;
 }
+
+/* ---------- Header / nameplate ---------- */
 
 header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 3.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.header-eyebrow {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0 0 1rem;
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.compass-mark {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
 }
 
 header h1 {
-  font-size: 2rem;
-  margin-bottom: 0.25rem;
+  font-family: "Fraunces", serif;
+  font-size: 2.4rem;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.01em;
 }
 
-header p {
-  color: #9ba1ac;
-  margin: 0;
+.header-tagline {
+  color: var(--parchment-dim);
+  font-size: 1.05rem;
+  max-width: 480px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* ---------- Form ---------- */
+
+.profile-form {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 2.25rem 2rem;
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+}
+
+.profile-form::before,
+.profile-form::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--brass);
+  opacity: 0.6;
+}
+
+.profile-form::before {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.profile-form::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+}
+
+.profile-form h2 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 1.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.profile-form-subtitle {
+  color: var(--parchment-dim);
+  font-size: 0.9rem;
+  margin: 0 0 2rem;
+  line-height: 1.5;
 }
 
 .form-section {
-  margin-bottom: 1.5rem;
+  padding-top: 1.5rem;
+  margin-bottom: 0;
+  border-top: 1px solid var(--panel-border);
+}
+
+.form-section:first-of-type {
+  padding-top: 0;
+  border-top: none;
+}
+
+.form-section + .form-section {
+  margin-top: 1.5rem;
+}
+
+.form-section {
+  margin-bottom: 1.75rem;
 }
 
 .form-section label {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin-bottom: 0.75rem;
+}
+
+.step-num {
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--parchment-dim);
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: normal;
 }
 
 .chip-options,
@@ -49,99 +177,146 @@ header p {
 }
 
 .chip {
-  background: #1a1d27;
-  border: 1px solid #2c303c;
-  color: #e6e6e6;
-  padding: 0.4rem 0.9rem;
-  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--parchment);
+  padding: 0.45rem 1rem;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.15s, border-color 0.15s;
+  font-size: 0.88rem;
+  font-family: "Inter", sans-serif;
+  transition: border-color 0.15s, background 0.15s;
 }
 
 .chip:hover {
-  border-color: #4a90e2;
+  border-color: var(--brass-dim);
+  transform: translateY(-1px);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
 }
 
 .chip-selected {
-  background: #4a90e2;
-  border-color: #4a90e2;
-  color: white;
+  background: rgba(201, 162, 39, 0.12);
+  border-color: var(--brass);
+  color: var(--brass);
 }
 
 .chip-custom-input {
   display: flex;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  margin-top: 0.85rem;
 }
 
 .chip-custom-input input {
   flex: 1;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #2c303c;
-  background: #1a1d27;
-  color: #e6e6e6;
+  padding: 0.55rem 0.8rem;
+  border-radius: 4px;
+  border: 1px solid var(--panel-border);
+  background: var(--ink);
+  color: var(--parchment);
+  font-family: "Inter", sans-serif;
+}
+
+.chip-custom-input input:focus {
+  outline: 2px solid var(--brass);
+  outline-offset: 1px;
 }
 
 .chip-custom-input button {
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: none;
-  background: #2c303c;
-  color: #e6e6e6;
+  padding: 0.55rem 1.1rem;
+  border-radius: 4px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  color: var(--parchment);
   cursor: pointer;
+  font-family: "Inter", sans-serif;
 }
 
 .chip-custom-selected {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  margin-top: 0.85rem;
 }
 
 .chip-custom-selected .chip button {
   background: none;
   border: none;
-  color: white;
+  color: var(--brass);
   margin-left: 0.4rem;
   cursor: pointer;
   font-size: 1rem;
+  padding: 0;
 }
 
 .submit-btn {
   width: 100%;
-  padding: 0.9rem;
-  border-radius: 10px;
-  border: none;
-  background: #4a90e2;
-  color: white;
-  font-size: 1rem;
+  padding: 0.95rem;
+  border-radius: 4px;
+  border: 1px solid var(--brass);
+  background: var(--brass);
+  color: var(--ink);
+  font-family: "Inter", sans-serif;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
+  transition: background 0.15s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #ddb534;
+  box-shadow: 0 8px 20px -8px rgba(201, 162, 39, 0.5);
+}
+
+.submit-btn:focus-visible {
+  outline: 2px solid var(--parchment);
+  outline-offset: 2px;
 }
 
 .submit-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ---------- Loading / error states ---------- */
 
 .loading-state,
 .error-state {
   text-align: center;
   padding: 3rem 1rem;
-  color: #9ba1ac;
+  color: var(--parchment-dim);
+  font-family: "Inter", sans-serif;
+}
+
+.error-state button,
+.results-view > button {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--parchment);
+  padding: 0.5rem 1.1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+  margin-top: 0.75rem;
 }
 
 .contributor-profile-preview {
-  background: #1a1d27;
-  border-left: 3px solid #4a90e2;
-  padding: 1rem;
-  border-radius: 8px;
+  background: var(--panel);
+  border-left: 2px solid var(--brass);
+  padding: 1rem 1.15rem;
+  border-radius: 4px;
+  font-family: "Fraunces", serif;
   font-style: italic;
+  font-size: 0.95rem;
+  color: var(--parchment-dim);
   margin-bottom: 1.5rem;
 }
+
+/* ---------- Results / bearings ---------- */
 
 .recommendations-list {
   display: flex;
@@ -151,10 +326,10 @@ header p {
 }
 
 .issue-card {
-  background: #1a1d27;
-  border: 1px solid #2c303c;
-  border-radius: 12px;
-  padding: 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 1.4rem;
 }
 
 .issue-card-header {
@@ -162,53 +337,147 @@ header p {
   justify-content: space-between;
   align-items: flex-start;
   gap: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .issue-card-header h3 {
   margin: 0;
-  font-size: 1.05rem;
-}
-
-.confidence-badge {
-  padding: 0.25rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.confidence-high {
-  background: #1e4620;
-  color: #4ade80;
-}
-
-.confidence-medium {
-  background: #4a3a1e;
-  color: #facc15;
-}
-
-.confidence-low {
-  background: #4a1e1e;
-  color: #f87171;
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 1.08rem;
+  line-height: 1.35;
 }
 
 .issue-repo {
-  color: #9ba1ac;
-  font-size: 0.85rem;
-  margin: 0.5rem 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  color: var(--parchment-dim);
+  margin: 0 0 0.75rem;
 }
+
+/* confidence needle indicator */
+
+.confidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.confidence-badge svg {
+  width: 16px;
+  height: 16px;
+}
+
+.confidence-high { color: var(--verified-green); }
+.confidence-medium { color: var(--caution-amber); }
+.confidence-low { color: var(--low-rust); }
 
 .issue-why {
   margin: 0.5rem 0;
+  line-height: 1.5;
 }
 
 .issue-why-not {
-  color: #facc15;
-  font-size: 0.9rem;
+  color: var(--caution-amber);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.issue-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin-top: 1rem;
+}
+
+.issue-card-actions button {
+  background: none;
+  border: 1px solid var(--panel-border);
+  color: var(--parchment);
+  padding: 0.4rem 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+  font-size: 0.85rem;
+}
+
+.issue-card-actions button:hover {
+  border-color: var(--brass-dim);
 }
 
 .issue-card a {
-  color: #4a90e2;
+  color: var(--brass);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+}
+
+/* ---------- Issue explainer / chart detail ---------- */
+
+.issue-explainer {
+  background: var(--panel);
+  border: 1px solid var(--brass-dim);
+  border-radius: 6px;
+  padding: 1.75rem;
+  margin-top: 1.5rem;
+}
+
+.issue-explainer > button {
+  background: none;
+  border: none;
+  color: var(--brass);
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+  font-size: 0.85rem;
+  padding: 0;
+  margin-bottom: 1.25rem;
+}
+
+.issue-explainer h2 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 1.25rem;
+  margin: 0 0 0.75rem;
+}
+
+.issue-explainer h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 1.25rem 0 0.5rem;
+}
+
+.issue-explainer p {
+  line-height: 1.55;
+}
+
+.issue-explainer ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.issue-explainer li {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+  color: var(--parchment-dim);
+}
+
+.issue-explainer strong {
+  color: var(--brass);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 }

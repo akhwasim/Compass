@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ProfileForm } from "./components/ProfileForm";
 import { buildProfile, getRecommendations, getIssueExplainer } from "./api/client";
 import type { ProfileFormData, RecommendedIssue, IssueExplainerResponse } from "./types";
+import { ConfidenceIndicator } from "./components/ConfidenceIndicator";
 import "./App.css";
 
 type ViewState = "form" | "loading-profile" | "loading-recommendations" | "results" | "error";
@@ -84,8 +85,18 @@ function App() {
   return (
     <div className="app-container">
       <header>
-        <h1>🧭 Compass</h1>
-        <p>Find the open source issue you can actually solve.</p>
+        <p className="header-eyebrow">Open source navigation</p>
+        <div className="header-main">
+          <svg className="compass-mark" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="16" stroke="#C9A227" strokeWidth="1.5" />
+            <path d="M18 8 L21 18 L18 28 L15 18 Z" fill="#C9A227" />
+            <circle cx="18" cy="18" r="2" fill="#10161F" stroke="#C9A227" strokeWidth="1" />
+          </svg>
+          <h1>Compass</h1>
+        </div>
+        <p className="header-tagline">
+          Tell us who you are. We'll chart the issue you can actually solve - and explain why.
+        </p>
       </header>
 
       {view === "form" && (
@@ -118,27 +129,27 @@ function App() {
         <div className="results-view">
           <p className="contributor-profile-preview">"{contributorProfile}"</p>
           <button onClick={handleStartOver}>Start over</button>
-          <div className="recommendations-list">
-            {recommendations.map((rec, idx) => (
-              <div key={idx} className="issue-card">
-                <div className="issue-card-header">
-                  <h3>{rec.title}</h3>
-                  <span className={`confidence-badge confidence-${rec.confidence.toLowerCase()}`}>
-                    {rec.confidence}
-                  </span>
+          {!selectedExplainer && !explainerLoading && (
+            <div className="recommendations-list">
+              {recommendations.map((rec, idx) => (
+                <div key={idx} className="issue-card">
+                  <div className="issue-card-header">
+                    <h3>{rec.title}</h3>
+                    <ConfidenceIndicator level={rec.confidence} />
+                  </div>
+                  <p className="issue-repo">{rec.repo}</p>
+                  <p className="issue-why">{rec.why}</p>
+                  {rec.why_not && <p className="issue-why-not">⚠ {rec.why_not}</p>}
+                  <div className="issue-card-actions">
+                    <button onClick={() => handleIssueClick(rec)}>Understand this issue</button>
+                    <a href={rec.url} target="_blank" rel="noopener noreferrer">
+                      View on GitHub →
+                    </a>
+                  </div>
                 </div>
-                <p className="issue-repo">{rec.repo}</p>
-                <p className="issue-why">{rec.why}</p>
-                {rec.why_not && <p className="issue-why-not">⚠ {rec.why_not}</p>}
-                <div className="issue-card-actions">
-                  <button onClick={() => handleIssueClick(rec)}>Understand this issue</button>
-                  <a href={rec.url} target="_blank" rel="noopener noreferrer">
-                    View on GitHub →
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {explainerLoading && (
             <div className="loading-state">

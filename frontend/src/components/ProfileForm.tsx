@@ -37,9 +37,12 @@ export function ProfileForm({ onSubmit, isLoading }: ProfileFormProps) {
   return (
     <form className="profile-form" onSubmit={handleSubmit}>
       <h2>Tell us who you are</h2>
+      <p className="profile-form-subtitle">
+        A few details on your skills and interests - Compass uses these to find issues you're actually equipped to solve.
+      </p>
 
       <div className="form-section">
-        <label>Experience</label>
+        <label><span className="step-num">01</span> Experience</label>
         <div className="experience-options">
           {(["beginner", "intermediate", "advanced"] as ExperienceLevel[]).map((level) => (
             <button
@@ -55,7 +58,7 @@ export function ProfileForm({ onSubmit, isLoading }: ProfileFormProps) {
       </div>
 
       <div className="form-section">
-        <label>Languages</label>
+        <label><span className="step-num">02</span> Languages</label>
         <ChipMultiSelect
           options={LANGUAGE_OPTIONS}
           selected={languages}
@@ -66,7 +69,7 @@ export function ProfileForm({ onSubmit, isLoading }: ProfileFormProps) {
       </div>
 
       <div className="form-section">
-        <label>Frameworks</label>
+        <label><span className="step-num">03</span> Frameworks</label>
         <ChipMultiSelect
           options={FRAMEWORK_OPTIONS}
           selected={frameworks}
@@ -77,7 +80,7 @@ export function ProfileForm({ onSubmit, isLoading }: ProfileFormProps) {
       </div>
 
       <div className="form-section">
-        <label>Interested In</label>
+        <label><span className="step-num">04</span> Interested In</label>
         <ChipMultiSelect
           options={INTEREST_OPTIONS}
           selected={interests}
@@ -86,7 +89,7 @@ export function ProfileForm({ onSubmit, isLoading }: ProfileFormProps) {
       </div>
 
       <div className="form-section">
-        <label>Available Time</label>
+        <label><span className="step-num">05</span> Available Time</label>
         <div className="time-options">
           {TIME_OPTIONS.map((time) => (
             <button
