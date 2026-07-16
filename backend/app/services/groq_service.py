@@ -106,17 +106,16 @@ Match the index number to the issue number above. "confidence" must be one of "H
         "max_tokens": 2000,
     }
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(GROQ_API_BASE, headers=_get_headers(), json=payload)
-        response.raise_for_status()
-        data = response.json()
-        raw_text = data["choices"][0]["message"]["content"].strip()
-
-    raw_text = raw_text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-
     try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(GROQ_API_BASE, headers=_get_headers(), json=payload)
+            response.raise_for_status()
+            data = response.json()
+            raw_text = data["choices"][0]["message"]["content"].strip()
+
+        raw_text = raw_text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         reasoning_list = json.loads(raw_text)
-    except json.JSONDecodeError:
+    except (httpx.HTTPError, httpx.TimeoutException, json.JSONDecodeError, KeyError):
         reasoning_list = []
 
     reasoning_by_index = {item["index"]: item for item in reasoning_list}
@@ -176,17 +175,16 @@ Return ONLY valid JSON, no preamble, no markdown fences, in this exact format:
         "max_tokens": 700,
     }
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(GROQ_API_BASE, headers=_get_headers(), json=payload)
-        response.raise_for_status()
-        data = response.json()
-        raw_text = data["choices"][0]["message"]["content"].strip()
-
-    raw_text = raw_text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-
     try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(GROQ_API_BASE, headers=_get_headers(), json=payload)
+            response.raise_for_status()
+            data = response.json()
+            raw_text = data["choices"][0]["message"]["content"].strip()
+
+        raw_text = raw_text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         return json.loads(raw_text)
-    except json.JSONDecodeError:
+    except (httpx.HTTPError, httpx.TimeoutException, json.JSONDecodeError, KeyError):
         return {
             "summary": "Unable to generate a summary for this issue right now.",
             "likely_files": [],

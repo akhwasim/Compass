@@ -133,8 +133,10 @@ async def get_recommendations(request: RecommendationRequest):
                     "confidence": confidence,
                 })
 
-    ranked = await rank_issues_with_reasoning(request.contributor_profile, all_candidates, request.interests)
+    if not all_candidates:
+        return RecommendationResponse(count=0, recommendations=[])
 
+    ranked = await rank_issues_with_reasoning(request.contributor_profile, all_candidates, request.interests)
     top_results = ranked[:10]
 
     return RecommendationResponse(
