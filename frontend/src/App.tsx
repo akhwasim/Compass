@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ProfileForm } from "./components/ProfileForm";
-import { buildProfile, getRecommendations } from "./api/client";
-import type { ProfileFormData, RecommendedIssue } from "./types";
+import { buildProfile, getRecommendations, getIssueExplainer } from "./api/client";
+import type { ProfileFormData, RecommendedIssue, IssueExplainerResponse } from "./types";
 import "./App.css";
 
 type ViewState = "form" | "loading-profile" | "loading-recommendations" | "results" | "error";
@@ -12,6 +12,9 @@ function App() {
   const [contributorProfile, setContributorProfile] = useState<string>("");
   const [recommendations, setRecommendations] = useState<RecommendedIssue[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [selectedExplainer, setSelectedExplainer] = useState<IssueExplainerResponse | null>(null);
+  const [explainerLoading, setExplainerLoading] = useState(false);
+  const [explainerError, setExplainerError] = useState<string>("");
 
   async function handleFormSubmit(data: ProfileFormData) {
     setFormData(data);
@@ -37,6 +40,37 @@ function App() {
       setErrorMessage("Something went wrong while finding your matches. Please try again.");
       setView("error");
     }
+  }
+
+  function parseIssueUrl(url: string): { owner: string; repo: string; issueNumber: number } | null {
+    const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
+    if (!match) return null;
+    return { owner: match[1], repo: match[2], issueNumber: parseInt(match[3], 10) };
+  }
+
+  async function handleIssueClick(rec: RecommendedIssue) {
+    const parsed = parseIssueUrl(rec.url);
+    if (!parsed) {
+      setExplainerError("Couldn't parse this issue's URL.");
+      return;
+    }
+    setExplainerLoading(true);
+    setExplainerError("");
+    setSelectedExplainer(null);
+    try {
+      const explainer = await getIssueExplainer(parsed.owner, parsed.repo, parsed.issueNumber);
+      setSelectedExplainer(explainer);
+    } catch (err) {
+      console.error(err);
+      setExplainerError("Couldn't load details for this issue. Please try again.");
+    } finally {
+      setExplainerLoading(false);
+    }
+  }
+
+  function closeExplainer() {
+    setSelectedExplainer(null);
+    setExplainerError("");
   }
 
   function handleStartOver() {
@@ -96,12 +130,55 @@ function App() {
                 <p className="issue-repo">{rec.repo}</p>
                 <p className="issue-why">{rec.why}</p>
                 {rec.why_not && <p className="issue-why-not">⚠ {rec.why_not}</p>}
-                <a href={rec.url} target="_blank" rel="noopener noreferrer">
-                  View on GitHub →
-                </a>
+                <div className="issue-card-actions">
+                  <button onClick={() => handleIssueClick(rec)}>Understand this issue</button>
+                  <a href={rec.url} target="_blank" rel="noopener noreferrer">
+                    View on GitHub →
+                  </a>
+                </div>
               </div>
             ))}
           </div>
+
+          {explainerLoading && (
+            <div className="loading-state">
+              <p>Reading the issue and repo...</p>
+            </div>
+          )}
+
+          {explainerError && <p className="error-state">{explainerError}</p>}
+
+          {selectedExplainer && (
+            <div className="issue-explainer">
+              <button onClick={closeExplainer}>← Back to list</button>
+              <h2>{selectedExplainer.title}</h2>
+              <p>{selectedExplainer.summary}</p>
+
+              <h4>Likely files</h4>
+              <ul>
+                {selectedExplainer.likely_files.map((f, i) => (
+                  <li key={i}>{f}</li>
+                ))}
+              </ul>
+
+              <h4>Concepts you'll need</h4>
+              <ul>
+                {selectedExplainer.concepts.map((c, i) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+
+              <p><strong>Difficulty:</strong> {selectedExplainer.difficulty}</p>
+              <p><strong>Suggested first step:</strong> {selectedExplainer.suggested_first_step}</p>
+
+              <h4>Read first</h4>
+              <ul>
+                {selectedExplainer.read_first.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </div>
