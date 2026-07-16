@@ -55,6 +55,8 @@ async def search_issues(
             headers=_get_headers(),
             params=params,
         )
+        if response.status_code == 403:
+            return []  # rate limited — degrade to no results rather than crashing
         response.raise_for_status()
         data = response.json()
         return data.get("items", [])
@@ -70,6 +72,14 @@ async def get_repo_metadata(repo_full_name: str) -> dict:
             f"{GITHUB_API_BASE}/repos/{repo_full_name}",
             headers=_get_headers(),
         )
+        if response.status_code == 403:
+            # rate limited — return safe defaults so this repo scores conservatively rather than crashing
+            return {
+                "language": None,
+                "pushed_at": None,
+                "open_issues_count": 0,
+                "stargazers_count": 0,
+            }
         response.raise_for_status()
         data = response.json()
         return {
