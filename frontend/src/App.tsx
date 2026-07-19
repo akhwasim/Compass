@@ -9,7 +9,6 @@ type ViewState = "form" | "loading-profile" | "loading-recommendations" | "resul
 
 function App() {
   const [view, setView] = useState<ViewState>("form");
-  const [formData, setFormData] = useState<ProfileFormData | null>(null);
   const [contributorProfile, setContributorProfile] = useState<string>("");
   const [recommendations, setRecommendations] = useState<RecommendedIssue[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -18,7 +17,6 @@ function App() {
   const [explainerError, setExplainerError] = useState<string>("");
 
   async function handleFormSubmit(data: ProfileFormData) {
-    setFormData(data);
     setView("loading-profile");
     setErrorMessage("");
 
@@ -76,7 +74,6 @@ function App() {
 
   function handleStartOver() {
     setView("form");
-    setFormData(null);
     setContributorProfile("");
     setRecommendations([]);
     setErrorMessage("");
@@ -122,6 +119,13 @@ function App() {
         <div className="error-state">
           <p>No matching issues found for this combination. Try adding another language or loosening your interests.</p>
           <button onClick={handleStartOver}>Adjust my profile</button>
+        </div>
+      )}
+
+      {view === "error" && (
+        <div className="error-state">
+          <p>{errorMessage}</p>
+          <button onClick={handleStartOver}>Try again</button>
         </div>
       )}
 
