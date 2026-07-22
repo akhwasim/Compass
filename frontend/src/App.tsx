@@ -19,6 +19,8 @@ function App() {
   async function handleFormSubmit(data: ProfileFormData) {
     setView("loading-profile");
     setErrorMessage("");
+    setSelectedExplainer(null);
+    setExplainerError("");
 
     try {
       const profileResult = await buildProfile(data);
@@ -77,6 +79,8 @@ function App() {
     setContributorProfile("");
     setRecommendations([]);
     setErrorMessage("");
+    setSelectedExplainer(null);
+    setExplainerError("");
   }
 
   return (
