@@ -48,7 +48,10 @@ Compass follows one simple principle:
 
 ## Screenshots
 
-*(add a screenshot or short GIF of the form and results screen here)*
+<img width="1876" height="1462" alt="image" src="https://github.com/user-attachments/assets/d2f61209-b2c9-4211-9705-93181990c8bf" />
+<img width="1992" height="1448" alt="image" src="https://github.com/user-attachments/assets/7af24082-f636-41f1-8c8d-9e1909286ea6" />
+<img width="1580" height="1434" alt="image" src="https://github.com/user-attachments/assets/21981774-33db-44f0-b07f-fdeaec0fbe5f" />
+
 
 ---
 
